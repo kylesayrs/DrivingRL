@@ -16,3 +16,4 @@ class EnvironmentConfig(BaseModel):
 
     num_rays: int = Field(default=12)
     ray_length: float = Field(default=10.0)
+    goal_radius: float = Field(default=1.0)

@@ -2,7 +2,7 @@ from typing import Tuple
 
 import math
 import numpy
-from shapely import Polygon, Point, LineString
+from shapely import Polygon, Point, LineString, MultiPolygon
 
 
 def get_rotation_matrix(angle: float):
@@ -38,11 +38,16 @@ def make_circle(
 
 def make_ray_lines(
     start: Tuple[float, float],
+    angle_offset: float,
     length: float,
     num_rays: int,
 ):
+    print([
+        make_line(start, length, (ray_i / num_rays) * (2 * math.pi) - angle_offset)
+        for ray_i in range(num_rays)
+    ])
     return [
-        make_line(start, length, (ray_i / num_rays) * (2 * math.pi))
+        make_line(start, length, (ray_i / num_rays) * (2 * math.pi) - angle_offset)
         for ray_i in range(num_rays)
     ]
 
@@ -53,5 +58,5 @@ def make_line(
     angle: float,
 ):
     end = numpy.array([length * math.cos(angle), length * math.sin(angle)]) + start
-    
+
     return LineString([start, end])
