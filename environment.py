@@ -4,7 +4,7 @@ import geopandas
 import matplotlib.pyplot as plt
 
 from config import EnvironmentConfig
-from geometry import make_rectangle, make_circle
+from geometry import make_rectangle, make_circle, make_ray_lines
 
 
 def random_position(config: EnvironmentConfig):
@@ -22,7 +22,8 @@ class DrivingEnvironment:
         (
             self.car_polygon,
             self.car_protection_polygon,
-            self.object_polygons
+            self.ray_lines,
+            self.object_polygons,
         ) = self._new_environment()
     
 
@@ -41,6 +42,12 @@ class DrivingEnvironment:
         )
 
         car_protection_polygon = car_polygon.buffer(self.config.car_protection_buffer)
+
+        ray_lines = make_ray_lines(
+            numpy.array(car_polygon.centroid.coords)[0],  # TODO: jank
+            self.config.ray_length,
+            self.config.num_rays
+        )
 
         num_object_tries = numpy.random.randint(
             self.config.object_min_num,
@@ -69,19 +76,23 @@ class DrivingEnvironment:
             if not object_polygon.intersects(car_protection_polygon):
                 object_polygons.append(object_polygon)
         
-        return car_polygon, car_protection_polygon, object_polygons
+        return car_polygon, car_protection_polygon, ray_lines, object_polygons
     
 
     def render(self):
         objects_to_render = (
             [self.car_polygon] +
             [self.car_protection_polygon.exterior] +
+            self.ray_lines + 
             self.object_polygons
         )
-        colors = ["blue"] + ["yellow"] + ["black"] * len(self.object_polygons)
+        colors = (
+            ["blue"] +
+            ["yellow"] +
+            ["red"] * len(self.ray_lines) +
+            ["black"] * len(self.object_polygons)
+        )
         axes = geopandas.GeoSeries(objects_to_render).plot(color=colors)
-
-        # TODO: render input rays
 
         axes.set_xbound(0.0, self.config.region_width)
         axes.set_ybound(0.0, self.config.region_height)
