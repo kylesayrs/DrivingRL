@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from shapely import MultiPolygon
 
 from config import EnvironmentConfig
-from geometry import make_rectangle, make_circle, make_ray_lines
+from geometry import make_rectangle, make_circle, make_box, make_ray_lines
 
 
 def random_position(config: EnvironmentConfig):
@@ -40,9 +40,9 @@ class DrivingEnvironment:
         car_angle = numpy.random.uniform(0.0, 2 * math.pi)
 
         car_polygon = make_rectangle(
-            self._get_random_position(),
+            (self.config.region_width / 2, self.config.region_height / 2),
             (self.config.car_width, self.config.car_height),
-            angle=car_angle
+            head_angle=car_angle
         )
 
         car_protection_polygon = car_polygon.buffer(self.config.car_protection_buffer)
@@ -62,7 +62,7 @@ class DrivingEnvironment:
                         numpy.random.uniform(self.config.object_min_size, self.config.object_max_size),
                         numpy.random.uniform(self.config.object_min_size, self.config.object_max_size)
                     ),
-                    angle=numpy.random.uniform(0.0, 2 * math.pi)
+                    head_angle=numpy.random.uniform(0.0, 2 * math.pi)
                 )
 
             if object_type == 1:
@@ -74,6 +74,12 @@ class DrivingEnvironment:
             if not object_polygon.intersects(car_protection_polygon):
                 object_polygons.append(object_polygon)
 
+        boundary_object = make_box(
+            (self.config.region_width, self.config.region_height),
+            self.config.boundary_width
+        )
+        object_polygons.append(boundary_object)
+
         goal_polygon = make_circle(self._get_random_position(), self.config.goal_radius)
         
         return car_polygon, car_angle, car_protection_polygon, object_polygons, goal_polygon
@@ -81,7 +87,7 @@ class DrivingEnvironment:
 
     def render(self):
         ray_lines = make_ray_lines(
-            numpy.array(self.car_polygon.centroid.coords)[0],  # TODO: cringe
+            self.car_polygon.centroid.coords[0],
             self.car_angle,
             self.config.ray_length,
             self.config.num_rays
@@ -90,60 +96,72 @@ class DrivingEnvironment:
         objects_to_render = (
             [self.car_polygon] +
             [self.car_protection_polygon.exterior] +
+            [self.goal_polygon] +
             ray_lines + 
             self.object_polygons
         )
         colors = (
             ["blue"] +
             ["yellow"] +
-            ["red"] * len(ray_lines) +
+            ["green"] +
+            ["orange"] +
+            ["red"] * (len(ray_lines) - 1) +
             ["black"] * len(self.object_polygons)
         )
         axes = geopandas.GeoSeries(objects_to_render).plot(color=colors)
 
-        axes.set_xbound(0.0, self.config.region_width)
-        axes.set_ybound(0.0, self.config.region_height)
+        axes.set_xbound(
+            -1 * self.config.boundary_width,
+            self.config.region_width + self.config.boundary_width
+        )
+        axes.set_ybound(
+            -1 * self.config.boundary_width,
+            self.config.region_height + self.config.boundary_width
+        )
 
         plt.show()
     
 
     def get_state(self):
+        car_center = numpy.array(self.car_polygon.centroid.coords[0])
+        goal_center = numpy.array(self.goal_polygon.centroid.coords[0])
         ray_lines = make_ray_lines(
-            numpy.array(self.car_polygon.centroid.coords)[0],  # TODO: cringe
+            car_center,
             self.car_angle,
             self.config.ray_length,
             self.config.num_rays
         )
 
         ray_distances = []
-        for ray_line in self.ray_lines:
+        for ray_line in ray_lines:
             intersections = []
 
             for object_polygon in self.object_polygons:
-                intersections += ray_line.intersection(object_polygon.exterior)
+                object_intersection = ray_line.intersection(object_polygon.exterior)
+
+                if object_intersection.is_empty:
+                    continue
+
+                if (object_intersection.geom_type == "MultiPoint"):
+                    intersections += [numpy.array(intersection.coords[0]) for intersection in object_intersection.geoms]
+
+                else:
+                    intersections.append(numpy.array(object_intersection.coords[0]))
 
             # note: rays always begin at car centroid
             intersection_distances = [
-                numpy.linalg.norm(intersection - self.car_polygon.centroid.coords, p=2)
+                numpy.linalg.norm(intersection - car_center)
                 for intersection in intersections
             ]
 
-            first_intersection_index = numpy.argmin(intersection_distances)
-
-            if first_intersection_index != -1:
-                ray_distances.append(intersection_distances[first_intersection_index])
-
+            if len(intersection_distances) > 0:
+                ray_distances.append(min(intersection_distances))
             else:
                 ray_distances.append(self.config.ray_length * 2)
 
-        goal_distance = numpy.linalg.norm(
-            self.car_polygon.centroid.coords - self.goal_polygon.centroid.coords
-        )
-        goal_car_theta = self.car_polygon.centroid.coords @ self.goal_polygon.centroid.coords - self.car_angle
-        goal_angle_cos = math.cos(goal_car_theta)
-        goal_angle_sin = math.sin(goal_car_theta)
+        goal_displacement_x, goal_displacement_y = goal_center - car_center
         
-        state = ray_distances + [goal_distance, goal_angle_cos, goal_angle_sin]
+        state = ray_distances + [goal_displacement_x, goal_displacement_y]
         state = numpy.array(state)
 
         return state
@@ -165,3 +183,5 @@ if __name__ == "__main__":
     environment_config = EnvironmentConfig()
     environment = DrivingEnvironment(environment_config)
     environment.render()
+    state = environment.get_state()
+    print(state)
