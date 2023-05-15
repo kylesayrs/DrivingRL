@@ -67,8 +67,12 @@ def make_line(
     return LineString([start, end])
 
 
-def move_polygon(
+def affine_polygon(
     polygon: Polygon,
-    displacement: Tuple[float, float]
+    displacement: Tuple[float, float],
+    angular_displacement: float
 ):
-    pass
+    polygon = affinity.rotate(polygon, angular_displacement, "center", use_radians=True)
+    polygon = affinity.translate(polygon, *displacement)
+
+    return polygon

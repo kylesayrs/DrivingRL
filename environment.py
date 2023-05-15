@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from shapely import MultiPolygon
 
 from config import EnvironmentConfig
-from geometry import make_rectangle, make_circle, make_box, make_ray_lines
+from geometry import make_rectangle, make_circle, make_box, make_ray_lines, affine_polygon
 
 
 def random_position(config: EnvironmentConfig):
@@ -47,7 +47,7 @@ class DrivingEnvironment:
             head_angle=car_angle
         )
 
-        car_velocity = 0.0
+        car_velocity = numpy.array([0.0, 0.0])
 
         car_angle_velocity = 0.0
 
@@ -185,14 +185,24 @@ class DrivingEnvironment:
 
 
     def perform_action(self, pos_acc: float, angle_acc: float):
-        self.car_polygon = self.car_polygon
+        self.car_velocity += pos_acc
+        self.car_angle_velocity += angle_acc
+
+        self.car_polygon = affine_polygon(
+            self.car_polygon,
+            self.car_velocity,
+            self.car_angle_velocity
+        )
+        self.car_angle += self.car_angle_velocity
         
-        self.acceleration
-        reward = None
-        next_state = None
-        is_finished = None
+        for object_polygon in self.object_polygons:
+            if self.car_polygon.intersects(object_polygon):
+                return self.config.collision_reward, True, None
+
+        if self.car_polygon.intersects(self.goal_polygon):
+            return self.config.goal_reward, True, None
         
-        return reward, next_state, is_finished
+        return 0.0, False, self.get_state()
     
 
     def show_animation():
@@ -202,6 +212,16 @@ class DrivingEnvironment:
 if __name__ == "__main__":
     environment_config = EnvironmentConfig()
     environment = DrivingEnvironment(environment_config)
+    state = environment.get_state()
+    print(state)
+    environment.render()
+
+    environment.perform_action(1.0, 0.0)
+    state = environment.get_state()
+    print(state)
+    environment.render()
+
+    environment.perform_action(1.0, 0.0)
     state = environment.get_state()
     print(state)
     environment.render()
