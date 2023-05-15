@@ -23,6 +23,8 @@ class DrivingEnvironment:
         (
             self.car_polygon,
             self.car_angle,
+            self.car_velocity,
+            self.car_angle_velocity,
             self.car_protection_polygon,
             self.object_polygons,
             self.goal_polygon,
@@ -44,6 +46,10 @@ class DrivingEnvironment:
             (self.config.car_width, self.config.car_height),
             head_angle=car_angle
         )
+
+        car_velocity = 0.0
+
+        car_angle_velocity = 0.0
 
         car_protection_polygon = car_polygon.buffer(self.config.car_protection_buffer)
 
@@ -82,7 +88,15 @@ class DrivingEnvironment:
 
         goal_polygon = make_circle(self._get_random_position(), self.config.goal_radius)
         
-        return car_polygon, car_angle, car_protection_polygon, object_polygons, goal_polygon
+        return (
+            car_polygon,
+            car_angle,
+            car_velocity,
+            car_angle_velocity,
+            car_protection_polygon,
+            object_polygons,
+            goal_polygon
+        )
     
 
     def render(self):
@@ -159,15 +173,21 @@ class DrivingEnvironment:
             else:
                 ray_distances.append(self.config.ray_length * 2)
 
-        goal_displacement_x, goal_displacement_y = goal_center - car_center
+        goal_displacement = goal_center - car_center
+        goal_distance = numpy.linalg.norm(goal_displacement)
+        goal_angle_right = math.atan2(goal_displacement[1], goal_displacement[0])
+        goal_angle_head = goal_angle_right - math.pi / 2
         
-        state = ray_distances + [goal_displacement_x, goal_displacement_y]
+        state = ray_distances + [goal_angle_head, goal_distance]
         state = numpy.array(state)
 
         return state
 
 
-    def perform_action(self, action):
+    def perform_action(self, pos_acc: float, angle_acc: float):
+        self.car_polygon = self.car_polygon
+        
+        self.acceleration
         reward = None
         next_state = None
         is_finished = None
@@ -182,6 +202,6 @@ class DrivingEnvironment:
 if __name__ == "__main__":
     environment_config = EnvironmentConfig()
     environment = DrivingEnvironment(environment_config)
-    environment.render()
     state = environment.get_state()
     print(state)
+    environment.render()

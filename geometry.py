@@ -2,14 +2,7 @@ from typing import Tuple
 
 import math
 import numpy
-from shapely import Polygon, Point, LineString, LinearRing
-
-
-def get_rotation_matrix(angle: float):
-    return numpy.array([
-        [math.cos(angle), -1 * math.sin(angle)],
-        [math.sin(angle), math.cos(angle)],
-    ])
+from shapely import affinity, Polygon, Point, LineString, LinearRing
 
 
 def make_rectangle(
@@ -22,12 +15,14 @@ def make_rectangle(
         [size[0] / 2, size[1] / 2],
         [size[0] / 2, -1 * size[1] / 2],
         [-1 * size[0] / 2, -1 * size[1] / 2],
-    ]).T
+    ])
     right_side_angle = head_angle - (math.pi / 2)
-    rotation_matrix = get_rotation_matrix(right_side_angle)
 
-    shell_points = (rotation_matrix @ corner_positions).T + position
-    return Polygon(shell_points)
+    rectangle = Polygon(corner_positions)
+    rectangle = affinity.rotate(rectangle, right_side_angle, "center", use_radians=True)
+    rectangle = affinity.translate(rectangle, *position)
+
+    return rectangle
 
 
 def make_circle(
@@ -70,3 +65,10 @@ def make_line(
     end = numpy.array([length * math.cos(angle), length * math.sin(angle)]) + start
 
     return LineString([start, end])
+
+
+def move_polygon(
+    polygon: Polygon,
+    displacement: Tuple[float, float]
+):
+    pass
