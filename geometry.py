@@ -8,18 +8,16 @@ from shapely import affinity, Polygon, Point, LineString, LinearRing
 def make_rectangle(
     position: Tuple[float, float],
     size: Tuple[float, float],
-    head_angle: float = 0.0
+    angle: float = 0.0
 ):
-    corner_positions = numpy.array([
-        [-1 * size[0] / 2, size[1] / 2],
-        [size[0] / 2, size[1] / 2],
-        [size[0] / 2, -1 * size[1] / 2],
-        [-1 * size[0] / 2, -1 * size[1] / 2],
-    ])
-    right_side_angle = head_angle - (math.pi / 2)
-
+    corner_positions = numpy.array([  # facing right
+        [     size[1],      size[0]],
+        [     size[1], -1 * size[0]],
+        [-1 * size[1], -1 * size[0]],
+        [-1 * size[1],      size[0]],
+    ]) / 2
     rectangle = Polygon(corner_positions)
-    rectangle = affinity.rotate(rectangle, right_side_angle, "center", use_radians=True)
+    rectangle = affinity.rotate(rectangle, angle, "center", use_radians=True)
     rectangle = affinity.translate(rectangle, *position)
 
     return rectangle
@@ -46,13 +44,12 @@ def make_box(
 
 def make_ray_lines(
     start: Tuple[float, float],
-    head_angle: float,
+    angle: float,
     length: float,
     num_rays: int,
 ):
-    right_side_angle = head_angle - (math.pi / 2)
     return [
-        make_line(start, length, (ray_i / num_rays) * (2 * math.pi) + right_side_angle + (math.pi / 2))
+        make_line(start, length, (ray_i / num_rays) * (2 * math.pi) + angle)
         for ray_i in range(num_rays)
     ]
 

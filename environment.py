@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import math
 import numpy
 import geopandas
@@ -44,7 +46,7 @@ class DrivingEnvironment:
         car_polygon = make_rectangle(
             (self.config.region_width / 2, self.config.region_height / 2),
             (self.config.car_width, self.config.car_height),
-            head_angle=car_angle
+            angle=car_angle
         )
 
         car_velocity = numpy.array([0.0, 0.0])
@@ -68,7 +70,7 @@ class DrivingEnvironment:
                         numpy.random.uniform(self.config.object_min_size, self.config.object_max_size),
                         numpy.random.uniform(self.config.object_min_size, self.config.object_max_size)
                     ),
-                    head_angle=numpy.random.uniform(0.0, 2 * math.pi)
+                    angle=numpy.random.uniform(0.0, 2 * math.pi)
                 )
 
             if object_type == 1:
@@ -175,17 +177,19 @@ class DrivingEnvironment:
 
         goal_displacement = goal_center - car_center
         goal_distance = numpy.linalg.norm(goal_displacement)
-        goal_angle_right = math.atan2(goal_displacement[1], goal_displacement[0])
-        goal_angle_head = goal_angle_right - math.pi / 2
+        goal_angle = math.atan2(goal_displacement[1], goal_displacement[0])
         
-        state = ray_distances + [goal_angle_head, goal_distance]
+        state = ray_distances + [goal_angle - self.car_angle, goal_distance]
         state = numpy.array(state)
 
         return state
+    
 
-
-    def perform_action(self, pos_acc: float, angle_acc: float):
-        self.car_velocity += pos_acc
+    def _move_car(self, pos_acc: float, angle_acc: float):
+        self.car_velocity += [
+            math.cos(self.car_angle) * pos_acc,
+            math.sin(self.car_angle) * pos_acc
+        ]
         self.car_angle_velocity += angle_acc
 
         self.car_polygon = affine_polygon(
@@ -194,6 +198,10 @@ class DrivingEnvironment:
             self.car_angle_velocity
         )
         self.car_angle += self.car_angle_velocity
+
+
+    def perform_action(self, pos_acc: float, angle_acc: float):
+        self._move_car(pos_acc, angle_acc)
         
         for object_polygon in self.object_polygons:
             if self.car_polygon.intersects(object_polygon):
