@@ -1,37 +1,42 @@
-from typing import Tuple
+from typing import Dict
 
 import math
 import numpy
 import geopandas
 import matplotlib.pyplot as plt
-from shapely import MultiPolygon
+
+from gym import Env, spaces
+from stable_baselines3.common.env_checker import check_env
 
 from config import EnvironmentConfig
 from geometry import make_rectangle, make_circle, make_box, make_ray_lines, affine_polygon
+from utils import lerp
 
 
-def random_position(config: EnvironmentConfig):
-    return (
-        numpy.random.uniform(0.0, config.region_width),
-        numpy.random.uniform(0.0, config.region_height)
-    )
-
-
-class DrivingEnvironment:
+class DrivingEnvironment(Env):
     def __init__(self, environment_config: EnvironmentConfig, device: str = "cpu") -> None:
+        super().__init__()
+        
         self.config = environment_config
         self.device = device
 
-        (
-            self.car_polygon,
-            self.car_angle,
-            self.car_velocity,
-            self.car_angle_velocity,
-            self.car_protection_polygon,
-            self.object_polygons,
-            self.goal_polygon,
-        ) = self._new_environment()
-    
+        self.reset()
+
+        self.action_space = spaces.Box(
+            -1,#min(self.config.car_min_acc, self.config.car_min_angle_acc),
+            1, #max(self.config.car_max_acc, self.config.car_max_angle_acc),
+            (2,)
+        )
+
+        max_distance = math.sqrt(self.config.region_width ** 2 + self.config.region_height ** 2)
+        self.observation_space = spaces.Dict(
+            spaces={
+                "visual": spaces.Box(0.0, self.config.ray_length, (self.config.num_rays,)),
+                "goal_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
+                "goal_distance": spaces.Box(0.0, max_distance, (1,)),
+            }
+        )
+
 
     def _get_random_position(self):
         return (
@@ -40,26 +45,26 @@ class DrivingEnvironment:
         )
 
     
-    def _new_environment(self):
-        car_angle = numpy.random.uniform(0.0, 2 * math.pi)
+    def reset(self):
+        self.car_angle = numpy.random.uniform(0.0, 2 * math.pi)
 
-        car_polygon = make_rectangle(
+        self.car_polygon = make_rectangle(
             (self.config.region_width / 2, self.config.region_height / 2),
             (self.config.car_width, self.config.car_height),
-            angle=car_angle
+            angle=self.car_angle
         )
 
-        car_velocity = numpy.array([0.0, 0.0])
+        self.car_velocity = numpy.array([0.0, 0.0])
 
-        car_angle_velocity = 0.0
+        self.car_angle_velocity = 0.0
 
-        car_protection_polygon = car_polygon.buffer(self.config.car_protection_buffer)
+        self.car_protection_polygon = self.car_polygon.buffer(self.config.car_protection_buffer)
 
         num_object_tries = numpy.random.randint(
             self.config.object_min_num,
             self.config.object_max_num
         )
-        object_polygons = []
+        self.object_polygons = []
         for _ in range(num_object_tries):
             object_type = numpy.random.randint(0, 2)
 
@@ -79,66 +84,65 @@ class DrivingEnvironment:
                     numpy.random.uniform(self.config.object_min_size, self.config.object_max_size)
                 )
 
-            if not object_polygon.intersects(car_protection_polygon):
-                object_polygons.append(object_polygon)
+            if not object_polygon.intersects(self.car_protection_polygon):
+                self.object_polygons.append(object_polygon)
 
         boundary_object = make_box(
             (self.config.region_width, self.config.region_height),
             self.config.boundary_width
         )
-        object_polygons.append(boundary_object)
+        self.object_polygons.append(boundary_object)
 
-        goal_polygon = make_circle(self._get_random_position(), self.config.goal_radius)
+        self.goal_polygon = make_circle(self._get_random_position(), self.config.goal_radius)
+
+        return self._get_observation()
+    
+
+    def render(self, mode="plot"):
+        if mode == "console":
+            raise NotImplementedError()
         
-        return (
-            car_polygon,
-            car_angle,
-            car_velocity,
-            car_angle_velocity,
-            car_protection_polygon,
-            object_polygons,
-            goal_polygon
-        )
+        elif mode == "plot":
+            ray_lines = make_ray_lines(
+                self.car_polygon.centroid.coords[0],
+                self.car_angle,
+                self.config.ray_length,
+                self.config.num_rays
+            )
+
+            objects_to_render = (
+                [self.car_polygon] +
+                [self.car_protection_polygon.exterior] +
+                [self.goal_polygon] +
+                ray_lines + 
+                self.object_polygons
+            )
+            colors = (
+                ["blue"] +
+                ["yellow"] +
+                ["green"] +
+                ["orange"] +
+                ["red"] * (len(ray_lines) - 1) +
+                ["black"] * len(self.object_polygons)
+            )
+            axes = geopandas.GeoSeries(objects_to_render).plot(color=colors)
+
+            axes.set_xbound(
+                -1 * self.config.boundary_width,
+                self.config.region_width + self.config.boundary_width
+            )
+            axes.set_ybound(
+                -1 * self.config.boundary_width,
+                self.config.region_height + self.config.boundary_width
+            )
+
+            plt.show()
+
+        else:
+            raise NotImplementedError()
     
 
-    def render(self):
-        ray_lines = make_ray_lines(
-            self.car_polygon.centroid.coords[0],
-            self.car_angle,
-            self.config.ray_length,
-            self.config.num_rays
-        )
-
-        objects_to_render = (
-            [self.car_polygon] +
-            [self.car_protection_polygon.exterior] +
-            [self.goal_polygon] +
-            ray_lines + 
-            self.object_polygons
-        )
-        colors = (
-            ["blue"] +
-            ["yellow"] +
-            ["green"] +
-            ["orange"] +
-            ["red"] * (len(ray_lines) - 1) +
-            ["black"] * len(self.object_polygons)
-        )
-        axes = geopandas.GeoSeries(objects_to_render).plot(color=colors)
-
-        axes.set_xbound(
-            -1 * self.config.boundary_width,
-            self.config.region_width + self.config.boundary_width
-        )
-        axes.set_ybound(
-            -1 * self.config.boundary_width,
-            self.config.region_height + self.config.boundary_width
-        )
-
-        plt.show()
-    
-
-    def get_state(self):
+    def _get_observation(self):
         car_center = numpy.array(self.car_polygon.centroid.coords[0])
         goal_center = numpy.array(self.goal_polygon.centroid.coords[0])
         ray_lines = make_ray_lines(
@@ -173,63 +177,110 @@ class DrivingEnvironment:
             if len(intersection_distances) > 0:
                 ray_distances.append(min(intersection_distances))
             else:
-                ray_distances.append(self.config.ray_length * 2)
+                ray_distances.append(self.config.ray_length)
 
         goal_displacement = goal_center - car_center
         goal_distance = numpy.linalg.norm(goal_displacement)
-        goal_angle = math.atan2(goal_displacement[1], goal_displacement[0])
-        
-        state = ray_distances + [goal_angle - self.car_angle, goal_distance]
-        state = numpy.array(state)
+        goal_global_angle = math.atan2(goal_displacement[1], goal_displacement[0])
+        goal_angle = (goal_global_angle - self.car_angle) % (2 * math.pi)
 
-        return state
+        return {
+            "visual": numpy.array(ray_distances, dtype=numpy.float32),
+            "goal_angle": numpy.array([goal_angle], dtype=numpy.float32),
+            "goal_distance": numpy.array([goal_distance], dtype=numpy.float32)
+        }
     
 
-    def _move_car(self, pos_acc: float, angle_acc: float):
-        self.car_velocity += [
-            math.cos(self.car_angle) * pos_acc,
-            math.sin(self.car_angle) * pos_acc
-        ]
+    def _move_car(self, action: numpy.ndarray):
+        print("_move_car")
+        forward_acc = lerp(action[0], -1, 1, self.config.car_min_acc, self.config.car_max_acc)
+        angle_acc = lerp(action[1], -1, 1, self.config.car_min_angle_acc, self.config.car_max_angle_acc)
+
+        print(angle_acc)
+        print(self.car_angle_velocity)
+        print(self.car_angle)
+        print("____")
         self.car_angle_velocity += angle_acc
+        self.car_angle += self.car_angle_velocity
+        self.car_angle %= (2 * math.pi)
+        print(angle_acc)
+        print(self.car_angle_velocity)
+        print(self.car_angle)
+        print("SDFSDF")
+
+        self.car_velocity += [
+            math.cos(self.car_angle) * forward_acc,
+            math.sin(self.car_angle) * forward_acc
+        ]
 
         self.car_polygon = affine_polygon(
             self.car_polygon,
             self.car_velocity,
             self.car_angle_velocity
         )
-        self.car_angle += self.car_angle_velocity
 
 
-    def perform_action(self, pos_acc: float, angle_acc: float):
-        self._move_car(pos_acc, angle_acc)
+    def _car_is_out_of_bounds(self):
+        return (
+            self.car_polygon.centroid.coords[0][0] < 0.0 or
+            self.car_polygon.centroid.coords[0][1] < 0.0 or
+            self.car_polygon.centroid.coords[0][0] > self.config.boundary_width or
+            self.car_polygon.centroid.coords[0][1] > self.config.boundary_height
+        )
+
+
+    def step(self, action: numpy.ndarray):
+        """
+        :param forward_acc: acceleration in direction the car is facing
+        :param angle_acc: change in steering wheel velocity
+
+        :return observation: current state
+        :return reward: reward for performing this action
+        :return done: True if the episode is finished
+        :return info: optional information
+        """
+        self._move_car(action)
+
+        if self._car_is_out_of_bounds():
+            return self._get_observation(), self.config.collision_reward, True, {}
         
         for object_polygon in self.object_polygons:
             if self.car_polygon.intersects(object_polygon):
-                return self.config.collision_reward, True, None
+                return self._get_observation(), self.config.collision_reward, True, {}
 
         if self.car_polygon.intersects(self.goal_polygon):
-            return self.config.goal_reward, True, None
+            return self._get_observation(), self.config.goal_reward, True, {}
         
-        return 0.0, False, self.get_state()
-    
-
-    def show_animation():
-        raise NotImplementedError
+        return self._get_observation(), 0.0, False, {}
 
 
 if __name__ == "__main__":
     environment_config = EnvironmentConfig()
     environment = DrivingEnvironment(environment_config)
-    state = environment.get_state()
-    print(state)
+    #check_env(environment)
+
+    #exit(0)
+
+    observation = environment._get_observation()
+    print(observation)
     environment.render()
 
-    environment.perform_action(1.0, 0.0)
-    state = environment.get_state()
-    print(state)
+    environment.step([0.1, 0.1])
+    observation = environment._get_observation()
+    print(observation)
     environment.render()
 
-    environment.perform_action(1.0, 0.0)
-    state = environment.get_state()
-    print(state)
+    environment.step([0.1, 0.0])
+    observation = environment._get_observation()
+    print(observation)
+    environment.render()
+
+    environment.step([0.1, -0.3])
+    observation = environment._get_observation()
+    print(observation)
+    environment.render()
+
+    environment.step([0.1, 0.0])
+    observation = environment._get_observation()
+    print(observation)
     environment.render()

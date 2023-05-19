@@ -10,6 +10,11 @@ class EnvironmentConfig(BaseModel):
     car_height: float = Field(default=3.0)
     car_protection_buffer: float = Field(default=2.0)
 
+    car_min_acc: float = Field(default=-3.0)
+    car_max_acc: float = Field(default=3.0)
+    car_min_angle_acc: float = Field(default=-3.0)
+    car_max_angle_acc: float = Field(default=3.0)
+
     object_min_num: int = Field(default=1)
     object_max_num: int = Field(default=8)
     object_min_size: float = Field(default=0.5)
