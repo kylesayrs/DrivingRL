@@ -6,15 +6,14 @@ import geopandas
 import matplotlib.pyplot as plt
 
 from gym import Env, spaces
-from stable_baselines3.common.env_checker import check_env
 
-from config import EnvironmentConfig
-from geometry import make_rectangle, make_circle, make_box, make_ray_lines, affine_polygon
-from utils import lerp
+from src.config import EnvironmentConfig
+from src.geometry import make_rectangle, make_circle, make_box, make_ray_lines, affine_polygon
+from src.utils import lerp
 
 
 class DrivingEnvironment(Env):
-    def __init__(self, environment_config: EnvironmentConfig, device: str = "cpu") -> None:
+    def __init__(self, environment_config: EnvironmentConfig, device: str = "cpu"):
         super().__init__()
         
         self.config = environment_config
@@ -22,11 +21,7 @@ class DrivingEnvironment(Env):
 
         self.reset()
 
-        self.action_space = spaces.Box(
-            -1,#min(self.config.car_min_acc, self.config.car_min_angle_acc),
-            1, #max(self.config.car_max_acc, self.config.car_max_angle_acc),
-            (2,)
-        )
+        self.action_space = spaces.Box(-1, 1, (2,))
 
         max_distance = math.sqrt(self.config.region_width ** 2 + self.config.region_height ** 2)
         self.observation_space = spaces.Dict(
@@ -72,8 +67,14 @@ class DrivingEnvironment(Env):
                 object_polygon = make_rectangle(
                     self._get_random_position(),
                     (
-                        numpy.random.uniform(self.config.object_min_size, self.config.object_max_size),
-                        numpy.random.uniform(self.config.object_min_size, self.config.object_max_size)
+                        numpy.random.uniform(
+                            self.config.object_min_size,
+                            self.config.object_max_size
+                        ),
+                        numpy.random.uniform(
+                            self.config.object_min_size,
+                            self.config.object_max_size
+                        )
                     ),
                     angle=numpy.random.uniform(0.0, 2 * math.pi)
                 )
@@ -81,7 +82,10 @@ class DrivingEnvironment(Env):
             if object_type == 1:
                 object_polygon = make_circle(
                     self._get_random_position(),
-                    numpy.random.uniform(self.config.object_min_size, self.config.object_max_size)
+                    numpy.random.uniform(
+                        self.config.object_min_size,
+                        self.config.object_max_size
+                    )
                 )
 
             if not object_polygon.intersects(self.car_protection_polygon):
@@ -93,7 +97,10 @@ class DrivingEnvironment(Env):
         )
         self.object_polygons.append(boundary_object)
 
-        self.goal_polygon = make_circle(self._get_random_position(), self.config.goal_radius)
+        self.goal_polygon = make_circle(
+            self._get_random_position(),
+            self.config.goal_radius
+        )
 
         return self._get_observation()
     
@@ -163,7 +170,10 @@ class DrivingEnvironment(Env):
                     continue
 
                 if (object_intersection.geom_type == "MultiPoint"):
-                    intersections += [numpy.array(intersection.coords[0]) for intersection in object_intersection.geoms]
+                    intersections += [
+                        numpy.array(intersection.coords[0])
+                        for intersection in object_intersection.geoms
+                    ]
 
                 else:
                     intersections.append(numpy.array(object_intersection.coords[0]))
@@ -192,21 +202,12 @@ class DrivingEnvironment(Env):
     
 
     def _move_car(self, action: numpy.ndarray):
-        print("_move_car")
         forward_acc = lerp(action[0], -1, 1, self.config.car_min_acc, self.config.car_max_acc)
         angle_acc = lerp(action[1], -1, 1, self.config.car_min_angle_acc, self.config.car_max_angle_acc)
 
-        print(angle_acc)
-        print(self.car_angle_velocity)
-        print(self.car_angle)
-        print("____")
         self.car_angle_velocity += angle_acc
         self.car_angle += self.car_angle_velocity
         self.car_angle %= (2 * math.pi)
-        print(angle_acc)
-        print(self.car_angle_velocity)
-        print(self.car_angle)
-        print("SDFSDF")
 
         self.car_velocity += [
             math.cos(self.car_angle) * forward_acc,
@@ -231,8 +232,8 @@ class DrivingEnvironment(Env):
 
     def step(self, action: numpy.ndarray):
         """
-        :param forward_acc: acceleration in direction the car is facing
-        :param angle_acc: change in steering wheel velocity
+        :param action[0]: car forward acceleration
+        :param action[1]: car angle acceleration
 
         :return observation: current state
         :return reward: reward for performing this action
@@ -252,35 +253,3 @@ class DrivingEnvironment(Env):
             return self._get_observation(), self.config.goal_reward, True, {}
         
         return self._get_observation(), 0.0, False, {}
-
-
-if __name__ == "__main__":
-    environment_config = EnvironmentConfig()
-    environment = DrivingEnvironment(environment_config)
-    #check_env(environment)
-
-    #exit(0)
-
-    observation = environment._get_observation()
-    print(observation)
-    environment.render()
-
-    environment.step([0.1, 0.1])
-    observation = environment._get_observation()
-    print(observation)
-    environment.render()
-
-    environment.step([0.1, 0.0])
-    observation = environment._get_observation()
-    print(observation)
-    environment.render()
-
-    environment.step([0.1, -0.3])
-    observation = environment._get_observation()
-    print(observation)
-    environment.render()
-
-    environment.step([0.1, 0.0])
-    observation = environment._get_observation()
-    print(observation)
-    environment.render()
