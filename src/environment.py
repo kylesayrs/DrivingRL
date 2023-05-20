@@ -25,7 +25,7 @@ class DrivingEnvironment(Env):
         max_distance = math.sqrt(self.config.region_width ** 2 + self.config.region_height ** 2)
         self.observation_space = spaces.Dict(
             spaces={
-                "car_velocity": spaces.Box(-1 * self.config.car_max_velocity, self.config.car_max_velocity, (2,)),
+                "car_velocity": spaces.Box(-1 * self.config.car_max_velocity, self.config.car_max_velocity, (1,)),
                 "car_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
                 "car_angle_velocity": spaces.Box(-1 * self.config.car_max_angle_velocity, self.config.car_max_angle_velocity, (1,)),
                 "visual": spaces.Box(0.0, self.config.ray_length, (self.config.num_rays,)),
@@ -200,7 +200,7 @@ class DrivingEnvironment(Env):
         goal_angle_sin = math.sin(goal_angle) % (2 * math.pi)
 
         return {
-            "car_velocity": numpy.array([self.car_velocity]),
+            "car_velocity": numpy.array([numpy.linalg.norm(self.car_velocity)]),
             "car_angle": numpy.array([self.car_angle]),
             "car_angle_velocity": numpy.array([self.car_angle_velocity]),
             "visual": numpy.array(ray_distances, dtype=numpy.float32),
@@ -212,15 +212,19 @@ class DrivingEnvironment(Env):
 
     def _move_car(self, action: numpy.ndarray):
         forward_acc = lerp(action[0], -1, 1, self.config.car_min_acc, self.config.car_max_acc)
-        angle_acc = lerp(action[1], -1, 1, self.config.car_min_angle_acc, self.config.car_max_angle_acc)
+        angle_acc = lerp(action[1], -1, 1, -1 * self.config.car_max_angle_acc, self.config.car_max_angle_acc)
 
+        # change angle
         self.car_angle_velocity += angle_acc
         self.car_angle_velocity = numpy.clip(
             self.car_angle_velocity,
             -1 * self.config.car_max_angle_velocity,
             self.config.car_max_angle_velocity
         )
+        self.car_angle += self.car_angle_velocity
+        self.car_angle %= 2 * math.pi
 
+        # change position
         self.car_velocity += [
             math.cos(self.car_angle) * forward_acc,
             math.sin(self.car_angle) * forward_acc
@@ -230,9 +234,6 @@ class DrivingEnvironment(Env):
             -1 * self.config.car_max_velocity,
             self.config.car_max_velocity
         )
-
-        self.car_angle += self.car_angle_velocity
-        self.car_angle %= (2 * math.pi)
         self.car_polygon = affine_polygon(
             self.car_polygon,
             self.car_velocity,

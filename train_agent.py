@@ -37,8 +37,10 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
     for i in range(agent_config.num_validation_steps):
         action, _states = model.predict(observation)
         print(action)
-        observation, rewards, dones, info = test_environment.step(action[0])
+        observation, rewards, dones, info = test_environment.step(action)
         test_environment.render()
+        if dones:
+            break
 
 
 if __name__ == "__main__":
