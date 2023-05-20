@@ -272,4 +272,4 @@ class DrivingEnvironment(Env):
         if self.car_polygon.intersects(self.goal_polygon):
             return self._get_observation(), self.config.goal_reward, True, {}
         
-        return self._get_observation(), 0.0, False, {}
+        return self._get_observation(), self.config.step_reward, False, {}

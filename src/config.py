@@ -15,7 +15,7 @@ class AgentConfig(BaseModel):
     gae_lambda: float = Field(default=0.95)
     clip_range: float = Field(default=0.2)
 
-    num_validation_steps: int = Field(default=50)
+    num_validation_steps: int = Field(default=100)
     progress_bar: bool = Field(default=False)
     verbosity: int = Field(default=1)
 
@@ -44,5 +44,6 @@ class EnvironmentConfig(BaseModel):
     ray_length: float = Field(default=10.0)
     goal_radius: float = Field(default=1.0)
 
+    step_reward: float = Field(default=-0.005)
     collision_reward: float = Field(default=-1.0)
     goal_reward: float = Field(default=1.0)
