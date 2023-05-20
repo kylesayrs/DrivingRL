@@ -1,4 +1,3 @@
-from typing import Dict
 
 import math
 import numpy
@@ -26,8 +25,12 @@ class DrivingEnvironment(Env):
         max_distance = math.sqrt(self.config.region_width ** 2 + self.config.region_height ** 2)
         self.observation_space = spaces.Dict(
             spaces={
+                "car_velocity": spaces.Box(-1 * self.config.car_max_velocity, self.config.car_max_velocity, (2,)),
+                "car_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
+                "car_angle_velocity": spaces.Box(-1 * self.config.car_max_angle_velocity, self.config.car_max_angle_velocity, (1,)),
                 "visual": spaces.Box(0.0, self.config.ray_length, (self.config.num_rays,)),
-                "goal_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
+                #"goal_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
+                "goal_angle": spaces.Box(0.0, 2 * math.pi, (2,)),
                 "goal_distance": spaces.Box(0.0, max_distance, (1,)),
             }
         )
@@ -58,7 +61,7 @@ class DrivingEnvironment(Env):
         num_object_tries = numpy.random.randint(
             self.config.object_min_num,
             self.config.object_max_num
-        )
+        ) if  self.config.object_max_num > 0 else 0
         self.object_polygons = []
         for _ in range(num_object_tries):
             object_type = numpy.random.randint(0, 2)
@@ -192,11 +195,17 @@ class DrivingEnvironment(Env):
         goal_displacement = goal_center - car_center
         goal_distance = numpy.linalg.norm(goal_displacement)
         goal_global_angle = math.atan2(goal_displacement[1], goal_displacement[0])
-        goal_angle = (goal_global_angle - self.car_angle) % (2 * math.pi)
+        goal_angle = (goal_global_angle - self.car_angle)
+        goal_angle_cos = math.cos(goal_angle) % (2 * math.pi)
+        goal_angle_sin = math.sin(goal_angle) % (2 * math.pi)
 
         return {
+            "car_velocity": numpy.array([self.car_velocity]),
+            "car_angle": numpy.array([self.car_angle]),
+            "car_angle_velocity": numpy.array([self.car_angle_velocity]),
             "visual": numpy.array(ray_distances, dtype=numpy.float32),
-            "goal_angle": numpy.array([goal_angle], dtype=numpy.float32),
+            "goal_angle": numpy.array([goal_angle_cos, goal_angle_sin], dtype=numpy.float32),
+            #"goal_angle": numpy.array([goal_angle], dtype=numpy.float32),
             "goal_distance": numpy.array([goal_distance], dtype=numpy.float32)
         }
     
@@ -206,14 +215,24 @@ class DrivingEnvironment(Env):
         angle_acc = lerp(action[1], -1, 1, self.config.car_min_angle_acc, self.config.car_max_angle_acc)
 
         self.car_angle_velocity += angle_acc
-        self.car_angle += self.car_angle_velocity
-        self.car_angle %= (2 * math.pi)
+        self.car_angle_velocity = numpy.clip(
+            self.car_angle_velocity,
+            -1 * self.config.car_max_angle_velocity,
+            self.config.car_max_angle_velocity
+        )
 
         self.car_velocity += [
             math.cos(self.car_angle) * forward_acc,
             math.sin(self.car_angle) * forward_acc
         ]
+        self.car_velocity = numpy.clip(
+            self.car_velocity,
+            -1 * self.config.car_max_velocity,
+            self.config.car_max_velocity
+        )
 
+        self.car_angle += self.car_angle_velocity
+        self.car_angle %= (2 * math.pi)
         self.car_polygon = affine_polygon(
             self.car_polygon,
             self.car_velocity,
@@ -225,8 +244,8 @@ class DrivingEnvironment(Env):
         return (
             self.car_polygon.centroid.coords[0][0] < 0.0 or
             self.car_polygon.centroid.coords[0][1] < 0.0 or
-            self.car_polygon.centroid.coords[0][0] > self.config.boundary_width or
-            self.car_polygon.centroid.coords[0][1] > self.config.boundary_height
+            self.car_polygon.centroid.coords[0][0] > self.config.region_width or
+            self.car_polygon.centroid.coords[0][1] > self.config.region_height
         )
 
 
