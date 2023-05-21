@@ -46,9 +46,9 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
 if __name__ == "__main__":
     training_config = AgentConfig()
     environment_config = EnvironmentConfig(
-        num_rays=1,
-        goal_radius=10,
-        object_max_num=0
+        num_rays=6,
+        goal_radius=5,
+        object_max_num=3
     )
 
     train_agent(training_config, environment_config)

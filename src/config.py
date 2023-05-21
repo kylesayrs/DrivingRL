@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class AgentConfig(BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=100_000)
+    total_timesteps: float = Field(default=300_000)
 
     policy: str = Field(default="MultiInputPolicy")
     learning_rate: float = Field(default=0.0005)
@@ -21,8 +21,8 @@ class AgentConfig(BaseModel):
 
 
 class EnvironmentConfig(BaseModel):
-    region_width: float = Field(default=200.0)
-    region_height: float = Field(default=200.0)
+    region_width: float = Field(default=100.0)
+    region_height: float = Field(default=100.0)
     boundary_width: float = Field(default=1.0)
     
     car_width: float = Field(default=1.0)
@@ -31,8 +31,8 @@ class EnvironmentConfig(BaseModel):
     car_max_velocity: float = Field(default=10.0)
     car_max_angle_velocity: float = Field(default=6.0)
 
-    car_min_acc: float = Field(default=-0.1)
-    car_max_acc: float = Field(default=3.0)
+    car_min_acc: float = Field(default=0.0)
+    car_max_acc: float = Field(default=1.0)
     car_max_angle_acc: float = Field(default=0.1)
 
     object_min_num: int = Field(default=1)
@@ -44,6 +44,6 @@ class EnvironmentConfig(BaseModel):
     ray_length: float = Field(default=10.0)
     goal_radius: float = Field(default=1.0)
 
-    step_reward: float = Field(default=-0.005)
+    step_reward: float = Field(default=0.0)
     collision_reward: float = Field(default=-1.0)
     goal_reward: float = Field(default=1.0)
