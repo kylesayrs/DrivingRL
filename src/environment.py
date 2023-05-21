@@ -61,7 +61,7 @@ class DrivingEnvironment(Env):
         num_object_tries = numpy.random.randint(
             self.config.object_min_num,
             self.config.object_max_num
-        ) if  self.config.object_max_num > 0 else 0
+        ) if self.config.object_max_num > 0 else 0
         self.object_polygons = []
         for _ in range(num_object_tries):
             object_type = numpy.random.randint(0, 2)
