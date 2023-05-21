@@ -5,14 +5,11 @@ from src.config import AgentConfig, EnvironmentConfig
 from src.environment import DrivingEnvironment
 
 def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig):
-    environment = DrivingEnvironment(environment_config)
-    """
     environment = make_vec_env(
         DrivingEnvironment,
         env_kwargs={"environment_config": environment_config},
         n_envs=agent_config.n_envs
     )
-    """
 
     model = PPO(
         agent_config.policy,
@@ -46,9 +43,9 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
 if __name__ == "__main__":
     training_config = AgentConfig()
     environment_config = EnvironmentConfig(
-        num_rays=1,
+        num_rays=8,
         goal_radius=3,
-        object_max_num=0
+        object_max_num=10
     )
 
     train_agent(training_config, environment_config)

@@ -12,11 +12,10 @@ from src.utils import lerp
 
 
 class DrivingEnvironment(Env):
-    def __init__(self, environment_config: EnvironmentConfig, device: str = "cpu"):
+    def __init__(self, environment_config: EnvironmentConfig):
         super().__init__()
         
         self.config = environment_config
-        self.device = device
 
         self.reset()
 
@@ -44,6 +43,8 @@ class DrivingEnvironment(Env):
 
     
     def reset(self):
+        self.num_steps = 0
+
         self.car_angle = numpy.random.uniform(0.0, 2 * math.pi)
 
         self.car_polygon = make_rectangle(
@@ -260,6 +261,11 @@ class DrivingEnvironment(Env):
         :return done: True if the episode is finished
         :return info: optional information
         """
+        self.num_steps += 1
+        
+        if self.num_steps >= self.config.max_steps:
+            return self._get_observation(), self.config.collision_reward, True, {}
+
         self._move_car(action)
 
         if self._car_is_out_of_bounds():

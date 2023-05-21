@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class AgentConfig(BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=100_000)
+    total_timesteps: float = Field(default=300_000)
 
     policy: str = Field(default="MultiInputPolicy")
     learning_rate: float = Field(default=0.0005)
@@ -11,7 +11,7 @@ class AgentConfig(BaseModel):
     batch_size: int = Field(default=64)
     n_epochs: int = Field(default=15)
 
-    gamma: float = Field(default=0.95)
+    gamma: float = Field(default=0.99)
     gae_lambda: float = Field(default=0.95)
     clip_range: float = Field(default=0.2)
 
@@ -48,3 +48,4 @@ class EnvironmentConfig(BaseModel):
     step_reward: float = Field(default=0.0)
     collision_reward: float = Field(default=-1.0)
     goal_reward: float = Field(default=1.0)
+    max_steps: int = Field(default=500)
