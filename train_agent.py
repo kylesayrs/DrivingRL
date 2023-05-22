@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
@@ -27,17 +29,8 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
         total_timesteps=training_config.total_timesteps,
         progress_bar=training_config.progress_bar
     )
-
-    test_environment = DrivingEnvironment(environment_config)
-    observation = test_environment.reset()
-    print(observation)
-    for i in range(agent_config.num_validation_steps):
-        action, _states = model.predict(observation)
-        print(action)
-        observation, rewards, dones, info = test_environment.step(action)
-        test_environment.render()
-        if dones:
-            break
+    now_string = str(datetime.now()).replace(" ", "_")
+    model.save(f"checkpoints/{now_string}.zip")
 
 
 if __name__ == "__main__":
@@ -45,7 +38,7 @@ if __name__ == "__main__":
     environment_config = EnvironmentConfig(
         num_rays=8,
         goal_radius=3,
-        object_max_num=10
+        object_max_num=20
     )
 
     train_agent(training_config, environment_config)
