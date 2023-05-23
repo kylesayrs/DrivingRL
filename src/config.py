@@ -6,18 +6,19 @@ class AgentConfig(BaseModel):
     total_timesteps: float = Field(default=500_000)
 
     policy: str = Field(default="MultiInputPolicy")
-    learning_rate: float = Field(default=0.0005)
+    learning_rate: float = Field(default=0.001)
     n_steps: float = Field(default=1024, description="The number of steps to run for each environment per update")
     batch_size: int = Field(default=64)
     n_epochs: int = Field(default=15)
 
-    gamma: float = Field(default=0.99)
+    gamma: float = Field(default=0.999)
     gae_lambda: float = Field(default=0.95)
     clip_range: float = Field(default=0.2)
 
     num_validation_steps: int = Field(default=300)
     progress_bar: bool = Field(default=False)
     verbosity: int = Field(default=1)
+    device: str = Field(default="cpu")
 
 
 class EnvironmentConfig(BaseModel):
@@ -34,16 +35,16 @@ class EnvironmentConfig(BaseModel):
 
     car_min_acc: float = Field(default=-0.5)
     car_max_acc: float = Field(default=1.0)
-    car_max_angle_acc: float = Field(default=0.1)
+    car_max_angle_acc: float = Field(default=0.05)
 
-    object_min_num: int = Field(default=1)
-    object_max_num: int = Field(default=8)
+    object_min_num: int = Field(default=5)
+    object_max_num: int = Field(default=10)
     object_min_size: float = Field(default=0.5)
     object_max_size: float = Field(default=3.0)
 
-    num_rays: int = Field(default=12)
-    ray_length: float = Field(default=10.0)
-    goal_radius: float = Field(default=1.0)
+    num_rays: int = Field(default=6)
+    ray_length: float = Field(default=15.0)
+    goal_radius: float = Field(default=3.0)
 
     step_reward: float = Field(default=0.0)
     collision_reward: float = Field(default=-1.0)

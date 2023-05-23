@@ -28,11 +28,7 @@ if __name__ == "__main__":
     checkpoint_path = sys.argv[1]
 
     training_config = AgentConfig()
-    environment_config = EnvironmentConfig(
-        num_rays=8,
-        goal_radius=3,
-        object_max_num=10
-    )
+    environment_config = EnvironmentConfig()
 
     validate_agent(
         checkpoint_path,

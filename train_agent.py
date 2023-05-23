@@ -23,7 +23,8 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
         gamma=agent_config.gamma,
         gae_lambda=agent_config.gae_lambda,
         clip_range=agent_config.clip_range,
-        verbose=agent_config.verbosity
+        verbose=agent_config.verbosity,
+        device=agent_config.device,
     )
     model.learn(
         total_timesteps=training_config.total_timesteps,
@@ -35,10 +36,6 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
 
 if __name__ == "__main__":
     training_config = AgentConfig()
-    environment_config = EnvironmentConfig(
-        num_rays=8,
-        goal_radius=3,
-        object_max_num=20
-    )
+    environment_config = EnvironmentConfig()
 
     train_agent(training_config, environment_config)

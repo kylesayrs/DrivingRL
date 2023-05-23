@@ -25,7 +25,7 @@ class DrivingEnvironment(Env):
         self.observation_space = spaces.Dict(
             spaces={
                 "car_velocity": spaces.Box(-1 * self.config.car_max_velocity, self.config.car_max_velocity, (1,)),
-                "car_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
+                "car_angle": spaces.Box(0.0, 2 * math.pi, (2,)),
                 "car_angle_velocity": spaces.Box(-1 * self.config.car_max_angle_velocity, self.config.car_max_angle_velocity, (1,)),
                 "visual": spaces.Box(0.0, self.config.ray_length, (self.config.num_rays,)),
                 #"goal_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
@@ -197,12 +197,15 @@ class DrivingEnvironment(Env):
         goal_distance = numpy.linalg.norm(goal_displacement)
         goal_global_angle = math.atan2(goal_displacement[1], goal_displacement[0])
         goal_angle = (goal_global_angle - self.car_angle)
+
+        car_angle_cos = math.cos(self.car_angle) % (2 * math.pi)
+        car_angle_sin = math.sin(self.car_angle) % (2 * math.pi)
         goal_angle_cos = math.cos(goal_angle) % (2 * math.pi)
         goal_angle_sin = math.sin(goal_angle) % (2 * math.pi)
 
         return {
             "car_velocity": numpy.array([numpy.linalg.norm(self.car_velocity)]),
-            "car_angle": numpy.array([self.car_angle]),
+            "car_angle": numpy.array([car_angle_cos, car_angle_sin]),
             "car_angle_velocity": numpy.array([self.car_angle_velocity]),
             "visual": numpy.array(ray_distances, dtype=numpy.float32),
             "goal_angle": numpy.array([goal_angle_cos, goal_angle_sin], dtype=numpy.float32),
