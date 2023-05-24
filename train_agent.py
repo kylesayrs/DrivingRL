@@ -16,6 +16,7 @@ def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig
     model = PPO(
         agent_config.policy,
         environment,
+        policy_kwargs=agent_config.policy_kwargs,
         learning_rate=agent_config.learning_rate,
         n_steps=agent_config.n_steps,
         batch_size=agent_config.batch_size,

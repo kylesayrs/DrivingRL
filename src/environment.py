@@ -209,7 +209,6 @@ class DrivingEnvironment(Env):
             "car_angle_velocity": numpy.array([self.car_angle_velocity]),
             "visual": numpy.array(ray_distances, dtype=numpy.float32),
             "goal_angle": numpy.array([goal_angle_cos, goal_angle_sin], dtype=numpy.float32),
-            #"goal_angle": numpy.array([goal_angle], dtype=numpy.float32),
             "goal_distance": numpy.array([goal_distance], dtype=numpy.float32)
         }
     
@@ -218,13 +217,15 @@ class DrivingEnvironment(Env):
         forward_acc = lerp(action[0], -1, 1, self.config.car_min_acc, self.config.car_max_acc)
         angle_acc = lerp(action[1], -1, 1, -1 * self.config.car_max_angle_acc, self.config.car_max_angle_acc)
 
-        # change angle
+        # change angular velocity
         self.car_angle_velocity += angle_acc
         self.car_angle_velocity = numpy.clip(
             self.car_angle_velocity,
             -1 * self.config.car_max_angle_velocity,
             self.config.car_max_angle_velocity
         )
+
+        # change angle
         self.car_angle += self.car_angle_velocity
         self.car_angle %= 2 * math.pi
 
