@@ -15,7 +15,7 @@ class AgentConfig(BaseModel):
     batch_size: int = Field(default=64)
     n_epochs: int = Field(default=15)
 
-    gamma: float = Field(default=0.95)
+    gamma: float = Field(default=0.97)
     gae_lambda: float = Field(default=0.95)
     clip_range: float = Field(default=0.2)
 
@@ -47,7 +47,7 @@ class EnvironmentConfig(BaseModel):
     object_max_size: float = Field(default=3.0)
 
     num_rays: int = Field(default=6)
-    ray_length: float = Field(default=40.0)
+    ray_length: float = Field(default=30.0)
     ray_sigmoid_density: float = Field(default=1.0)
     goal_radius: float = Field(default=3.0)
 
