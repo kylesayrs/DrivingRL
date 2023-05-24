@@ -28,7 +28,6 @@ class DrivingEnvironment(Env):
                 "car_angle": spaces.Box(0.0, 2 * math.pi, (2,)),
                 "car_angle_velocity": spaces.Box(-1 * self.config.car_max_angle_velocity, self.config.car_max_angle_velocity, (1,)),
                 "visual": spaces.Box(0.0, self.config.ray_length, (self.config.num_rays,)),
-                #"goal_angle": spaces.Box(0.0, 2 * math.pi, (1,)),
                 "goal_angle": spaces.Box(0.0, 2 * math.pi, (2,)),
                 "goal_distance": spaces.Box(0.0, max_distance, (1,)),
             }
@@ -118,6 +117,7 @@ class DrivingEnvironment(Env):
                 self.car_polygon.centroid.coords[0],
                 self.car_angle,
                 self.config.ray_length,
+                self.config.ray_sigmoid_density,
                 self.config.num_rays
             )
 
@@ -160,6 +160,7 @@ class DrivingEnvironment(Env):
             car_center,
             self.car_angle,
             self.config.ray_length,
+            self.config.ray_sigmoid_density,
             self.config.num_rays
         )
 

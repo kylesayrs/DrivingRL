@@ -4,6 +4,8 @@ import math
 import numpy
 from shapely import affinity, Polygon, Point, LineString, LinearRing
 
+from src.utils import lerp
+
 
 def make_rectangle(
     position: Tuple[float, float],
@@ -46,11 +48,30 @@ def make_ray_lines(
     start: Tuple[float, float],
     angle: float,
     length: float,
+    sigmoid_density: float,
     num_rays: int,
 ):
-    return [
-        make_line(start, length, (ray_i / num_rays) * (2 * math.pi) + angle)
+    ray_angles = [
+        (ray_i / num_rays) * (2 * math.pi)
         for ray_i in range(num_rays)
+    ]
+
+    # change density
+    if sigmoid_density > 0.0:
+        ray_angles = [
+            lerp(
+                math.atan(sigmoid_density * (ray_angle - math.pi)),
+                math.atan(sigmoid_density * (0 - math.pi)),
+                math.atan(sigmoid_density * (2 * math.pi - math.pi)),
+                0,
+                2 * math.pi,
+                )
+            for ray_angle in ray_angles
+        ]
+
+    return [
+        make_line(start, length, ray_angle + angle)
+        for ray_angle in ray_angles
     ]
 
 
