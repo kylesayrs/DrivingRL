@@ -10,7 +10,7 @@ class AgentConfig(BaseModel):
     policy: str = Field(default="MultiInputPolicy")
     policy_kwargs: str = Field(default={})
 
-    learning_rate: float = Field(default=0.0001)
+    learning_rate: float = Field(default=0.0005)
     n_steps: float = Field(default=1024, description="The number of steps to run for each environment per update")
     batch_size: int = Field(default=64)
     n_epochs: int = Field(default=15)
@@ -47,7 +47,7 @@ class EnvironmentConfig(BaseModel):
     object_max_size: float = Field(default=3.0)
 
     num_rays: int = Field(default=6)
-    ray_length: float = Field(default=15.0)
+    ray_length: float = Field(default=40.0)
     goal_radius: float = Field(default=3.0)
 
     step_reward: float = Field(default=0.0)
