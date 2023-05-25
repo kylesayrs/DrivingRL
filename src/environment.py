@@ -52,7 +52,7 @@ class DrivingEnvironment(Env):
             angle=self.car_angle
         )
 
-        self.car_velocity = numpy.array([0.0, 0.0])
+        self.car_velocity = 0.0
 
         self.car_angle_velocity = 0.0
 
@@ -205,7 +205,7 @@ class DrivingEnvironment(Env):
         goal_angle_sin = math.sin(goal_angle) % (2 * math.pi)
 
         return {
-            "car_velocity": numpy.array([numpy.linalg.norm(self.car_velocity)]),
+            "car_velocity": numpy.array([self.car_velocity]),
             "car_angle": numpy.array([car_angle_cos, car_angle_sin]),
             "car_angle_velocity": numpy.array([self.car_angle_velocity]),
             "visual": numpy.array(ray_distances, dtype=numpy.float32),
@@ -230,19 +230,21 @@ class DrivingEnvironment(Env):
         self.car_angle += self.car_angle_velocity
         self.car_angle %= 2 * math.pi
 
-        # change position
-        self.car_velocity += [
-            math.cos(self.car_angle) * forward_acc,
-            math.sin(self.car_angle) * forward_acc
-        ]
+        # change velocity
+        self.car_velocity += forward_acc
         self.car_velocity = numpy.clip(
             self.car_velocity,
             -1 * self.config.car_max_velocity,
             self.config.car_max_velocity
         )
+
+        # change position
         self.car_polygon = affine_polygon(
             self.car_polygon,
-            self.car_velocity,
+            [
+                math.cos(self.car_angle) * self.car_velocity,
+                math.sin(self.car_angle) * self.car_velocity
+            ],
             self.car_angle_velocity
         )
 

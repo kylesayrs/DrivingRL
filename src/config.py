@@ -19,7 +19,6 @@ class AgentConfig(BaseModel):
     gae_lambda: float = Field(default=0.95)
     clip_range: float = Field(default=0.2)
 
-    num_validation_steps: int = Field(default=300)
     progress_bar: bool = Field(default=False)
     verbosity: int = Field(default=2)
     device: str = Field(default="cpu")
@@ -34,19 +33,19 @@ class EnvironmentConfig(BaseModel):
     car_height: float = Field(default=3.0)
     car_protection_buffer: float = Field(default=2.0)
 
-    car_max_velocity: float = Field(default=10.0)
-    car_max_angle_velocity: float = Field(default=0.5)
-
-    car_min_acc: float = Field(default=-0.5)
+    car_max_velocity: float = Field(default=1.0)
+    car_min_acc: float = Field(default=-1.0)
     car_max_acc: float = Field(default=1.0)
+
+    car_max_angle_velocity: float = Field(default=0.5)
     car_max_angle_acc: float = Field(default=0.5)
 
-    object_min_num: int = Field(default=0)
-    object_max_num: int = Field(default=0)
+    object_min_num: int = Field(default=9)
+    object_max_num: int = Field(default=10)
     object_min_size: float = Field(default=0.5)
     object_max_size: float = Field(default=3.0)
 
-    num_rays: int = Field(default=6)
+    num_rays: int = Field(default=10)
     ray_length: float = Field(default=30.0)
     ray_sigmoid_density: float = Field(default=1.0)
     goal_radius: float = Field(default=3.0)

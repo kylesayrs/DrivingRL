@@ -1,18 +1,20 @@
-from src.config import EnvironmentConfig
+from src.config import AgentConfig, EnvironmentConfig
 from src.environment import DrivingEnvironment
 
 if __name__ == "__main__":
-    environment_config = EnvironmentConfig(
-        goal_radius=100,
-        object_max_num=0
-    )
+    agent_config = AgentConfig()
+    environment_config = EnvironmentConfig()
     environment = DrivingEnvironment(environment_config)
 
-    print(environment.step([1, 0.1]))
-    environment.render()
-    print(environment.step([1, 0.0]))
-    environment.render()
-    print(environment.step([1, -0.3]))
-    environment.render()
-    print(environment.step([1, 0.0]))
-    environment.render()
+    while True:
+        try:
+            input_string = input("[acc_speed, acc_angle]: ")
+        except EOFError:
+            break
+
+        acc_speed, acc_angle = input_string.split(" ")
+        acc_speed = float(acc_speed)
+        acc_angle = float(acc_angle)
+
+        environment.step([acc_speed, acc_angle])
+        environment.render(mode="plot")
