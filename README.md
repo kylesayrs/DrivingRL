@@ -6,7 +6,7 @@ This repo implements a basic driving environment and driving agent trained using
 
 
 ## Driving Environment ##
-The environment has three kinds of bodies: the car, obstacles, and the goal. When the car touches an obstacle, the agent receives a negative penalty. When the car touches the goal, the agent receives a positive reward. The gamma parameter controls how much the agent should care about future wards in relative to immediate rewards.  All three objects are placed randomly within the scene and an obstacle border is placed around the scene to prevent the vehicle from going out of bounds. Limits on the maximum car acceleration and speed are imposed.
+The environment has three kinds of bodies: the car, obstacles, and the goal. When the car touches an obstacle, the agent receives a negative penalty. When the car touches the goal, the agent receives a positive reward. The gamma parameter controls how much the agent should care about future rewards relative to immediate rewards.  All three objects are placed randomly within the scene and an obstacle border is placed around the scene to prevent the vehicle from going out of bounds.
 
 
 ## Observations ##
