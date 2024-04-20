@@ -6,6 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from src.config import AgentConfig, EnvironmentConfig
 from src.environment import DrivingEnvironment
 
+
 def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig):
     environment = make_vec_env(
         DrivingEnvironment,

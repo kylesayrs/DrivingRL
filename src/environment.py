@@ -1,10 +1,11 @@
+from typing import Optional
 
 import math
 import numpy
 import geopandas
 import matplotlib.pyplot as plt
 
-from gym import Env, spaces
+from gymnasium import Env, spaces
 
 from src.config import EnvironmentConfig
 from src.geometry import make_rectangle, make_circle, make_box, make_ray_lines, affine_polygon
@@ -16,8 +17,6 @@ class DrivingEnvironment(Env):
         super().__init__()
         
         self.config = environment_config
-
-        self.reset()
 
         self.action_space = spaces.Box(-1, 1, (2,))
 
@@ -41,7 +40,10 @@ class DrivingEnvironment(Env):
         )
 
     
-    def reset(self):
+    def reset(self, seed: Optional[int] = None):
+        #if seed is not None:
+        #    numpy.random.seed(seed)
+
         self.num_steps = 0
 
         self.car_angle = numpy.random.uniform(0.0, 2 * math.pi)
@@ -105,7 +107,9 @@ class DrivingEnvironment(Env):
             self.config.goal_radius
         )
 
-        return self._get_observation()
+        reset_info = {}
+
+        return self._get_observation(), reset_info
     
 
     def render(self, mode="plot"):
@@ -270,19 +274,20 @@ class DrivingEnvironment(Env):
         """
         self.num_steps += 1
         
+        # TODO: refactor
         if self.num_steps >= self.config.max_steps:
-            return self._get_observation(), self.config.collision_reward, True, {}
+            return self._get_observation(), self.config.timeout_reward, True, False, {}
 
         self._move_car(action)
 
         if self._car_is_out_of_bounds():
-            return self._get_observation(), self.config.collision_reward, True, {}
+            return self._get_observation(), self.config.collision_reward, True, False, {}
         
         for object_polygon in self.object_polygons:
             if self.car_polygon.intersects(object_polygon):
-                return self._get_observation(), self.config.collision_reward, True, {}
+                return self._get_observation(), self.config.collision_reward, True, False, {}
 
         if self.car_polygon.intersects(self.goal_polygon):
-            return self._get_observation(), self.config.goal_reward, True, {}
+            return self._get_observation(), self.config.goal_reward, True, False, {}
         
-        return self._get_observation(), self.config.step_reward, False, {}
+        return self._get_observation(), self.config.step_reward, False, False, {}

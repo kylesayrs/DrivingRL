@@ -1,10 +1,14 @@
 import sys
+import argparse
 
 from stable_baselines3 import PPO
 
 from src.config import AgentConfig, EnvironmentConfig
 from src.environment import DrivingEnvironment
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument("checkpoint_path", help="Path to checkpoint zip")
 
 def validate_agent(
     checkpoint_path: str,
@@ -13,22 +17,20 @@ def validate_agent(
     model = PPO.load(checkpoint_path)
 
     environment = DrivingEnvironment(environment_config)
-    observation = environment.reset()
-    print(observation)
+    observation, reset_info = environment.reset()
     for i in range(environment_config.max_steps):
         action, _states = model.predict(observation)
-        print(action)
-        observation, rewards, dones, info = environment.step(action)
+        observation, rewards, dones, truncated, info = environment.step(action)
         environment.render()
         if dones:
             break
 
 if __name__ == "__main__":
-    checkpoint_path = sys.argv[1]
+    args = parser.parse_args()
 
     environment_config = EnvironmentConfig()
 
     validate_agent(
-        checkpoint_path,
+        args.checkpoint_path,
         environment_config
     )
