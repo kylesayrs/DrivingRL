@@ -14,7 +14,7 @@ The agent observes the following dictionary of values at each time step:
 | Observation | Significance | Format |
 | ----------- | ------------ | ------ |
 | Car Velocity | Speed of car in X and Y axes | (velocity_x, velocity_y) |
-| Car Angle | Angle wich car is facing | (cos(theta), sin(theta)) |
+| Car Angle | Angle which car is facing | (cos(theta), sin(theta)) |
 | Car Angle Velocity | Speed at which car angle is changing | (theta, ) |
 | Car Visual | Distance from car to obstacle along each visual ray | (dist0, dist1, ...) |
 | Goal Angle | Angle between car angle and goal | (cos(theta), sin(theta)) |
